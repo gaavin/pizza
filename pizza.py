@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from typing import Optional
 
-#
+# Discord webhook URL
 WEBHOOK_URL = ""
 PIZZA = [
 	"http://ispizzahalfprice.com/baltimore",
