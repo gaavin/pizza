@@ -2,4 +2,4 @@
 
 scrape coupon codes from [ispizzahalfprice](http://ispizzahalfprice.com/baltimore) and send results as discord webhook
 
-requires beautifulsoup & aiohttp
+requires python3 & beautifulsoup & aiohttp
