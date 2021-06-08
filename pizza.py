@@ -2,6 +2,7 @@
 
 import aiohttp
 import asyncio
+import pickle
 
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
@@ -18,6 +19,27 @@ PIZZA = [
     "http://ispizzahalfprice.com/philly",
     "http://ispizzahalfprice.com/dc",
 ]
+
+
+class Persist:
+    def __init__(self, filename: str):
+        self._filename = filename
+        try:
+            open(filename, "xb")
+        except FileExistsError:
+            pass
+
+    def read(self):
+        with open(self._filename, "rb") as file:
+            try:
+                obj = pickle.load(file)
+            except EOFError:
+                obj = None
+        return obj
+
+    def write(self, obj):
+        with open(self._filename, "wb") as file:
+            pickle.dump(obj, file)
 
 
 @dataclass(frozen=True)
@@ -89,16 +111,17 @@ async def send_pizzas(session: aiohttp.ClientSession, pizzas: [Pizza]) -> None:
 
 
 async def main():
-    old_pizzas = []
-    while True:
-        async with aiohttp.ClientSession() as session:
-            coros = [get_pizza(session, url) for url in PIZZA]
-            new_pizzas = await asyncio.gather(*coros)
-            changed_pizzas = list(set(old_pizzas) ^ set(new_pizzas))
-            if changed_pizzas:
-                await send_pizzas(session, changed_pizzas)
-            old_pizzas = new_pizzas
-        await asyncio.sleep(120)
+    persist = Persist("pizzas.dat")
+    old_pizzas = persist.read()
+    if not old_pizzas:
+        old_pizzas = []
+    async with aiohttp.ClientSession() as session:
+        coros = [get_pizza(session, url) for url in PIZZA]
+        new_pizzas = await asyncio.gather(*coros)
+        changed_pizzas = list(set(old_pizzas) ^ set(new_pizzas))
+        if changed_pizzas:
+            await send_pizzas(session, changed_pizzas)
+            persist.write(new_pizzas)
 
 
 if __name__ == "__main__":
